@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="description" content="Private patient address book with duplicate detection and WhatsApp shortcuts." />
+  <title>Patient Address Book</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <main class="app-shell">
+    <header class="topbar glass">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5A8.51 8.51 0 0 0 12 3.5Z" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5v9M7.5 12h9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <h1>Patient Address Book</h1>
+          <p>Simple, fast &amp; private on this device</p>
+        </div>
+      </div>
+      <button id="addTopBtn" class="button primary" type="button">
+        <span>+</span> Add patient
+      </button>
+    </header>
+
+    <section class="hero">
+      <div>
+        <p class="eyebrow">PATIENT DIRECTORY</p>
+        <h2>Find a patient in seconds.</h2>
+        <p class="hero-copy">Search by name or phone number, catch possible duplicates before saving, and open WhatsApp with one tap.</p>
+      </div>
+      <div class="stats glass">
+        <div><strong id="patientCount">0</strong><span>Patients</span></div>
+        <div><strong id="withAddressCount">0</strong><span>With address</span></div>
+      </div>
+    </section>
+
+    <section class="toolbar glass">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.8"></circle><path d="m16.2 16.2 4.1 4.1"></path></svg>
+        <input id="searchInput" type="search" autocomplete="off" placeholder="Search by patient name or phone number..." />
+        <button id="clearSearch" class="icon-button hidden" type="button" aria-label="Clear search">×</button>
+      </div>
+      <button id="sortBtn" class="filter-button" type="button" title="Toggle sort order">A–Z <span>↕</span></button>
+    </section>
+
+    <section id="duplicateBanner" class="duplicate-banner hidden" aria-live="polite"></section>
+
+    <section id="patientList" class="patient-list" aria-live="polite"></section>
+
+    <section id="emptyState" class="empty glass">
+      <div class="empty-icon">⌕</div>
+      <h3>No patients yet</h3>
+      <p>Add your first patient to start building the address book.</p>
+      <button id="emptyAddBtn" class="button primary" type="button">Add first patient</button>
+    </section>
+  </main>
+
+  <dialog id="patientDialog" class="dialog">
+    <form id="patientForm" class="dialog-card" method="dialog">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow" id="dialogEyebrow">NEW PATIENT</p>
+          <h2 id="dialogTitle">Add patient</h2>
+        </div>
+        <button id="closeDialog" class="icon-button close" type="button" aria-label="Close">×</button>
+      </div>
+
+      <input id="patientId" type="hidden" />
+
+      <label>
+        <span>Name <b>*</b></span>
+        <input id="nameInput" type="text" maxlength="100" autocomplete="name" placeholder="Patient name" required />
+      </label>
+
+      <label>
+        <span>Contact number <b>*</b></span>
+        <div class="phone-row">
+          <select id="countryCode" aria-label="Country code">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+971">🇦🇪 +971</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+65">🇸🇬 +65</option>
+            <option value="+60">🇲🇾 +60</option>
+            <option value="+966">🇸🇦 +966</option>
+            <option value="+974">🇶🇦 +974</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+33">🇫🇷 +33</option>
+            <option value="+81">🇯🇵 +81</option>
+            <option value="+86">🇨🇳 +86</option>
+            <option value="+other">Other</option>
+          </select>
+          <input id="phoneInput" type="tel" maxlength="25" autocomplete="tel" placeholder="98765 43210" required />
+        </div>
+        <small id="phoneHint">For an international number, choose its country code. You can also paste a full number beginning with +.</small>
+      </label>
+
+      <label>
+        <span>Address <em>Optional</em></span>
+        <textarea id="addressInput" maxlength="500" rows="3" autocomplete="street-address" placeholder="Patient address"></textarea>
+      </label>
+
+      <div id="formDuplicateWarning" class="form-warning hidden"></div>
+
+      <div class="dialog-actions">
+        <button id="cancelBtn" class="button secondary" type="button">Cancel</button>
+        <button class="button primary" type="submit"><span id="saveButtonText">Save patient</span></button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
