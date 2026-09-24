@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0b1220" />
-  <meta name="description" content="Private patient address book with duplicate detection and WhatsApp shortcuts." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="description" content="Patient address book with fast local search, duplicate detection and WhatsApp shortcuts." />
   <title>Patient Address Book</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -18,48 +18,68 @@
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5a8.5 8.5 0 1 0 8.5 8.5A8.51 8.51 0 0 0 12 3.5Z" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5v9M7.5 12h9" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
         </div>
-        <div>
+        <div class="brand-copy">
           <h1>Patient Address Book</h1>
-          <p>Simple, fast &amp; private on this device</p>
+          <p>Patient directory</p>
         </div>
       </div>
-      <button id="addTopBtn" class="button primary" type="button">
-        <span>+</span> Add patient
-      </button>
+
+      <div class="topbar-actions">
+        <button id="themeToggle" class="icon-button theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.6"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 15.2A8.4 8.4 0 0 1 8.8 3.6 8.5 8.5 0 1 0 20.4 15.2Z"/></svg>
+        </button>
+        <button id="addTopBtn" class="button primary" type="button">
+          <span class="plus">+</span><span>Add patient</span>
+        </button>
+      </div>
     </header>
 
     <section class="hero">
-      <div>
+      <div class="hero-copy-block">
         <p class="eyebrow">PATIENT DIRECTORY</p>
-        <h2>Find a patient in seconds.</h2>
-        <p class="hero-copy">Search by name or phone number, catch possible duplicates before saving, and open WhatsApp with one tap.</p>
+        <h2>Your patients,<br class="desktop-break" /> right when you need them.</h2>
+        <p class="hero-copy">Search by name or phone number. Possible duplicates are flagged before anything is saved.</p>
       </div>
+
       <div class="stats glass">
-        <div><strong id="patientCount">0</strong><span>Patients</span></div>
-        <div><strong id="withAddressCount">0</strong><span>With address</span></div>
+        <div class="stat">
+          <strong id="patientCount">0</strong>
+          <span>Total patients</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <strong id="withAddressCount">0</strong>
+          <span>With address</span>
+        </div>
       </div>
     </section>
 
     <section class="toolbar glass">
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.8"></circle><path d="m16.2 16.2 4.1 4.1"></path></svg>
-        <input id="searchInput" type="search" autocomplete="off" placeholder="Search by patient name or phone number..." />
-        <button id="clearSearch" class="icon-button hidden" type="button" aria-label="Clear search">×</button>
+        <input id="searchInput" type="search" autocomplete="off" placeholder="Search name or phone number" aria-label="Search patients" />
+        <button id="clearSearch" class="icon-button clear-search hidden" type="button" aria-label="Clear search">×</button>
       </div>
-      <button id="sortBtn" class="filter-button" type="button" title="Toggle sort order">A–Z <span>↕</span></button>
+      <button id="sortBtn" class="filter-button" type="button" title="Toggle alphabetical order">
+        <span class="sort-label">A–Z</span><span class="sort-arrow">↕</span>
+      </button>
     </section>
 
     <section id="duplicateBanner" class="duplicate-banner hidden" aria-live="polite"></section>
-
     <section id="patientList" class="patient-list" aria-live="polite"></section>
 
     <section id="emptyState" class="empty glass">
-      <div class="empty-icon">⌕</div>
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 18.5v-13Z"/><path d="M8 8h8M8 12h5M8 16h4"/></svg>
+      </div>
       <h3>No patients yet</h3>
-      <p>Add your first patient to start building the address book.</p>
+      <p>Add your first patient to start building the directory.</p>
       <button id="emptyAddBtn" class="button primary" type="button">Add first patient</button>
     </section>
   </main>
+
+  <button id="mobileAddBtn" class="mobile-fab" type="button" aria-label="Add patient" title="Add patient">+</button>
 
   <dialog id="patientDialog" class="dialog">
     <form id="patientForm" class="dialog-card" method="dialog">
@@ -99,7 +119,7 @@
           </select>
           <input id="phoneInput" type="tel" maxlength="25" autocomplete="tel" placeholder="98765 43210" required />
         </div>
-        <small id="phoneHint">For an international number, choose its country code. You can also paste a full number beginning with +.</small>
+        <small id="phoneHint">Choose a country code, or paste a full international number beginning with +.</small>
       </label>
 
       <label>
