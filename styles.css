@@ -933,13 +933,13 @@ html[data-theme="light"] .glass-control {
 }
 .duplicate-banner,
 .form-warning {
-  color: #a15c00;
-  background: rgba(255,159,10,.12);
-  border-color: rgba(190,110,0,.24);
+  color: #c62828;
+  background: rgba(255,59,48,.12);
+  border-color: rgba(255,59,48,.32);
 }
 html[data-theme="dark"] .duplicate-banner,
 html[data-theme="dark"] .form-warning {
-  color: #ffd166;
-  background: rgba(255,159,10,.11);
-  border-color: rgba(255,209,102,.24);
+  color: #ff6b63;
+  background: rgba(255,59,48,.14);
+  border-color: rgba(255,107,99,.30);
 }
