@@ -1,4 +1,5 @@
 const THEME_KEY = "patient-address-book:theme";
+const GOOGLE_AUTH_KEY = "patient-address-book:google-authorized";
 
 const GOOGLE_CLIENT_ID = "469488426438-9j9uouudgmvropjtdkg15uqrl9kjtjc4.apps.googleusercontent.com";
 const GOOGLE_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
@@ -130,6 +131,7 @@ function requestGoogleAccess({forceConsent = false, silent = false} = {}) {
       }
       accessToken = response.access_token;
       accessTokenExpiresAt = Date.now() + (Number(response.expires_in || 3600) * 1000);
+      try { localStorage.setItem(GOOGLE_AUTH_KEY, "1"); } catch {}
       updateAuthButton(true, false);
       resolve(accessToken);
     };
@@ -156,14 +158,20 @@ async function ensureGoogleAccess() {
 
 async async function tryAutoConnect() {
   if (!googleAuthReady || googleAuthBusy) return;
+  let previouslyAuthorized = false;
+  try { previouslyAuthorized = localStorage.getItem(GOOGLE_AUTH_KEY) === "1"; } catch {}
+  if (!previouslyAuthorized) {
+    updateAuthButton(false, false);
+    return;
+  }
+
   try {
     await new Promise(resolve => setTimeout(resolve, 250));
-    await requestGoogleAccess({silent: true});
+    // An empty prompt follows Google's documented existing-grant flow.
+    await requestGoogleAccess({silent: false, forceConsent: false});
     await loadRemotePatients();
   } catch (error) {
-    // Silent authorization can fail when Google requires interaction.
-    // In that case the user can explicitly reconnect without exposing or storing tokens.
-    console.debug("Automatic Google connection was not available:", error);
+    console.debug("Automatic Google reconnection was not available:", error);
     updateAuthButton(false, false);
   }
 }
@@ -525,7 +533,20 @@ function showToast(message) {
 els.authButton?.addEventListener("click", async () => {
   if (!googleAuthReady || googleAuthBusy) return;
   try {
-    await requestGoogleAccess({forceConsent: !accessToken});
+    let previouslyAuthorized = false;
+    try { previouslyAuthorized = localStorage.getItem(GOOGLE_AUTH_KEY) === "1"; } catch {}
+    
+    // Reuse an existing Google grant without showing a consent screen.
+    // If Google requires interaction, fall back to an explicit consent request.
+    try {
+      await requestGoogleAccess({forceConsent: !previouslyAuthorized && !accessToken, silent: false});
+    } catch (firstError) {
+      if (previouslyAuthorized) {
+        await requestGoogleAccess({forceConsent: true, silent: false});
+      } else {
+        throw firstError;
+      }
+    }
     await loadRemotePatients();
     showToast("Google connected");
   } catch (error) {
