@@ -922,3 +922,24 @@ html[data-theme="light"] .glass-control {
   border-color: rgba(255,255,255,.22);
   box-shadow: 0 22px 60px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.30);
 }
+
+
+/* Final polish: keep overflow menus outside the glass card and improve warning contrast. */
+.patient-card.glass {
+  overflow: visible;
+}
+.patient-card .more-menu {
+  z-index: 100;
+}
+.duplicate-banner,
+.form-warning {
+  color: #a15c00;
+  background: rgba(255,159,10,.12);
+  border-color: rgba(190,110,0,.24);
+}
+html[data-theme="dark"] .duplicate-banner,
+html[data-theme="dark"] .form-warning {
+  color: #ffd166;
+  background: rgba(255,159,10,.11);
+  border-color: rgba(255,209,102,.24);
+}
