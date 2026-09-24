@@ -513,6 +513,19 @@ function openWhatsApp(id) {
   const url = patient && whatsappUrl(patient);
   if (!url) return;
 
+  // On Android, explicitly target WhatsApp Business so a second
+  // personal WhatsApp installation cannot steal the click.
+  const isAndroid = /Android/i.test(navigator.userAgent || "");
+  if (isAndroid) {
+    const phone = digitsOnly(patient.phone);
+    const fallback = encodeURIComponent(url);
+    const intentUrl =
+      `intent://send?phone=${phone}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;S.browser_fallback_url=${fallback};end`;
+    window.location.href = intentUrl;
+    return;
+  }
+
+  // Desktop/iOS: use WhatsApp's standard Click-to-Chat URL.
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
