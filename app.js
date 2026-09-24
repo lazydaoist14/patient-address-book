@@ -466,6 +466,7 @@ function savePatient(event) {
   };
 
   const duplicateMatches = findDuplicates(name, phone, state.editingId);
+  let allowDuplicate = false;
 
   if (duplicateMatches.length) {
     const names = duplicateMatches.map(p => p.name).join(", ");
@@ -475,9 +476,10 @@ function savePatient(event) {
 Do you want to save this record anyway?`
     );
     if (!proceed) return;
+    allowDuplicate = true;
   }
 
-  saveRemotePatient(patient);
+  saveRemotePatient(patient, allowDuplicate);
 }
 
 function deletePatient(id) {
