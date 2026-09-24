@@ -114,7 +114,7 @@ function loadGoogleIdentityServices() {
   });
 }
 
-function requestGoogleAccess({forceConsent = false} = {}) {
+function requestGoogleAccess({forceConsent = false, silent = false} = {}) {
   return new Promise((resolve, reject) => {
     if (!googleTokenClient) {
       reject(new Error("Google authorization is still loading. Please try again."));
@@ -138,7 +138,7 @@ function requestGoogleAccess({forceConsent = false} = {}) {
     updateAuthButton(false, true);
     try {
       googleTokenClient.requestAccessToken({
-        prompt: forceConsent || !accessToken ? "consent" : ""
+        prompt: silent ? "" : (forceConsent ? "consent" : "")
       });
     } catch (error) {
       googleAuthBusy = false;
@@ -157,7 +157,7 @@ async function ensureGoogleAccess() {
 async function tryAutoConnect() {
   if (!googleAuthReady || googleAuthBusy) return;
   try {
-    await requestGoogleAccess({forceConsent: false});
+    await requestGoogleAccess({silent: true});
     await loadRemotePatients();
   } catch (error) {
     // A first-time visitor may need to tap Connect Google.
