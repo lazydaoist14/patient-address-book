@@ -90,7 +90,15 @@ function initGoogleTokenClient() {
   googleTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: GOOGLE_SCOPE,
-    callback: () => {}
+    callback: () => {},
+    error_callback: error => {
+      googleAuthBusy = false;
+      updateAuthButton(Boolean(accessToken), false);
+      console.error("Google OAuth popup error:", error);
+      showToast(error?.type === "popup_failed_to_open"
+        ? "Google login popup was blocked. Please allow popups for this site."
+        : "Google authorization was cancelled.");
+    }
   });
   googleAuthReady = true;
   updateAuthButton(Boolean(accessToken), false);
@@ -140,7 +148,7 @@ function requestGoogleAccess({forceConsent = false, silent = false} = {}) {
     updateAuthButton(false, true);
     try {
       googleTokenClient.requestAccessToken({
-        prompt: silent ? "none" : (forceConsent ? "consent" : "")
+        prompt: silent ? "none" : "select_account"
       });
     } catch (error) {
       googleAuthBusy = false;
@@ -156,24 +164,9 @@ async function ensureGoogleAccess() {
   return requestGoogleAccess({forceConsent: false});
 }
 
-async async function tryAutoConnect() {
-  if (!googleAuthReady || googleAuthBusy) return;
-  let previouslyAuthorized = false;
-  try { previouslyAuthorized = localStorage.getItem(GOOGLE_AUTH_KEY) === "1"; } catch {}
-  if (!previouslyAuthorized) {
-    updateAuthButton(false, false);
-    return;
-  }
-
-  try {
-    await new Promise(resolve => setTimeout(resolve, 250));
-    // An empty prompt follows Google's documented existing-grant flow.
-    await requestGoogleAccess({silent: false, forceConsent: false});
-    await loadRemotePatients();
-  } catch (error) {
-    console.debug("Automatic Google reconnection was not available:", error);
-    updateAuthButton(false, false);
-  }
+async function tryAutoConnect() {
+  // The browser token model requires a user gesture for a fresh access token.
+  // Never start an OAuth popup automatically on page load.
 }
 
 function handleRemoteError(error) {
@@ -533,20 +526,7 @@ function showToast(message) {
 els.authButton?.addEventListener("click", async () => {
   if (!googleAuthReady || googleAuthBusy) return;
   try {
-    let previouslyAuthorized = false;
-    try { previouslyAuthorized = localStorage.getItem(GOOGLE_AUTH_KEY) === "1"; } catch {}
-    
-    // Reuse an existing Google grant without showing a consent screen.
-    // If Google requires interaction, fall back to an explicit consent request.
-    try {
-      await requestGoogleAccess({forceConsent: !previouslyAuthorized && !accessToken, silent: false});
-    } catch (firstError) {
-      if (previouslyAuthorized) {
-        await requestGoogleAccess({forceConsent: true, silent: false});
-      } else {
-        throw firstError;
-      }
-    }
+    await requestGoogleAccess({silent: false});
     await loadRemotePatients();
     showToast("Google connected");
   } catch (error) {
@@ -620,7 +600,7 @@ render();
 updateAuthButton(false, true);
 
 loadGoogleIdentityServices()
-  .then(() => tryAutoConnect())
+  .then(() => updateAuthButton(false, false))
   .catch(error => {
     console.error(error);
     updateAuthButton(false, false);
