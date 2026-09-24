@@ -8,7 +8,9 @@ const CACHE_KEY = "patient-address-book-v1";
 const CACHE_SECONDS = 120;
 
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile("Index").setTitle("Patient Address Book").addMetaTag("viewport", "width=device-width, initial-scale=1");
+  return HtmlService.createHtmlOutputFromFile("Index")
+    .setTitle("Patient Address Book")
+    .addMetaTag("viewport", "width=device-width, initial-scale=1");
 }
 
 function setup() {
@@ -16,8 +18,7 @@ function setup() {
   if (!ss) throw new Error("Open the Google Sheet first, then run setup().");
   let sheet = ss.getSheetByName(PATIENT_SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(PATIENT_SHEET_NAME);
-  if (sheet.getLastRow() === 0) sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-  else sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   sheet.setFrozenRows(1);
   sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
   if (sheet.getMaxRows() > 1) sheet.getRange(2, 1, sheet.getMaxRows() - 1, HEADERS.length).setNumberFormat("@");
@@ -35,8 +36,10 @@ function getPatients() {
   return patients;
 }
 
-function savePatientRecord(patient) {
-  if (!patient || !String(patient.name || "").trim() || !String(patient.phone || "").trim()) throw new Error("Name and contact number are required.");
+function savePatientRecord(patient, allowDuplicate) {
+  if (!patient || !String(patient.name || "").trim() || !String(patient.phone || "").trim()) {
+    throw new Error("Name and contact number are required.");
+  }
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
@@ -44,8 +47,26 @@ function savePatientRecord(patient) {
     const existing = getPatientsFresh_();
     const now = new Date().toISOString();
     const id = patient.id || Utilities.getUuid();
-    const record = { id:id, name:String(patient.name).trim(), phone:digitsOnly_(patient.phone), displayPhone:String(patient.displayPhone || patient.phone).trim(), countryCode:String(patient.countryCode || ""), address:String(patient.address || "").trim(), createdAt:(existing.find(p => p.id === id) || {}).createdAt || now, updatedAt:now };
+    const record = {
+      id,
+      name: String(patient.name).trim(),
+      phone: digitsOnly_(patient.phone),
+      displayPhone: String(patient.displayPhone || patient.phone).trim(),
+      countryCode: String(patient.countryCode || ""),
+      address: String(patient.address || "").trim(),
+      createdAt: (existing.find(p => p.id === id) || {}).createdAt || now,
+      updatedAt: now
+    };
     if (record.phone.length < 8) throw new Error("Please enter a valid contact number.");
+
+    if (!allowDuplicate) {
+      const duplicates = existing.filter(p => p.id !== id && (
+        normalizeName_(p.name) === normalizeName_(record.name) ||
+        digitsOnly_(p.phone) === record.phone
+      ));
+      if (duplicates.length) return {ok:false, duplicate:true, duplicates:duplicates};
+    }
+
     const row = [[record.id,record.name,record.phone,record.displayPhone,record.countryCode,record.address,record.createdAt,record.updatedAt]];
     const lastRow = sheet.getLastRow();
     let targetRow = -1;
@@ -59,7 +80,9 @@ function savePatientRecord(patient) {
     sheet.getRange(targetRow,1,1,HEADERS.length).setValues(row);
     CacheService.getScriptCache().remove(CACHE_KEY);
     return {ok:true, patients:getPatientsFresh_()};
-  } finally { lock.releaseLock(); }
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function deletePatientRecord(id) {
@@ -76,7 +99,9 @@ function deletePatientRecord(id) {
     }
     CacheService.getScriptCache().remove(CACHE_KEY);
     return {ok:true, patients:getPatientsFresh_()};
-  } finally { lock.releaseLock(); }
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function getPatientSheet_() {
@@ -91,7 +116,10 @@ function getPatientsFresh_() {
   const sheet = getPatientSheet_();
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  return sheet.getRange(2,1,lastRow-1,HEADERS.length).getDisplayValues().filter(r => r[0] && r[1] && r[2]).map(r => ({id:r[0],name:r[1],phone:r[2],displayPhone:r[3] || r[2],countryCode:r[4] || "",address:r[5] || "",createdAt:r[6] || "",updatedAt:r[7] || ""}));
+  return sheet.getRange(2,1,lastRow-1,HEADERS.length).getDisplayValues()
+    .filter(r => r[0] && r[1] && r[2])
+    .map(r => ({id:r[0],name:r[1],phone:r[2],displayPhone:r[3] || r[2],countryCode:r[4] || "",address:r[5] || "",createdAt:r[6] || "",updatedAt:r[7] || ""}));
 }
 
-function digitsOnly_(value) { return String(value || "").replace(/\\D/g, ""); }
+function digitsOnly_(value) { return String(value || "").replace(/\D/g, ""); }
+function normalizeName_(value) { return String(value || "").trim().replace(/\s+/g, " ").toLocaleLowerCase(); }
