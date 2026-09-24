@@ -1,10 +1,18 @@
-const STORAGE_KEY = "patient-address-book:v1";
 const THEME_KEY = "patient-address-book:theme";
 
-const IS_APPS_SCRIPT = typeof google !== "undefined" && google.script && google.script.run;
+const GOOGLE_CLIENT_ID = "469488426438-kh8ugv3c7v4d3oop5bpt9epgo9hbh7.apps.googleusercontent.com";
+const GOOGLE_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+const APPS_SCRIPT_DEPLOYMENT_ID = "AKfycbx9aJrbBXjgZua6fpJxLKFGp51XwuY7lV8fQ8OITGzKCDs9zXicv-CxOb0wVkYrwS3dg";
+const APPS_SCRIPT_RUN_URL = `https://script.googleapis.com/v1/scripts/${APPS_SCRIPT_DEPLOYMENT_ID}:run`;
+
+let googleTokenClient = null;
+let accessToken = null;
+let accessTokenExpiresAt = 0;
+let googleAuthReady = false;
+let googleAuthBusy = false;
 
 const state = {
-  patients: IS_APPS_SCRIPT ? [] : loadPatients(),
+  patients: [],
   editingId: null,
   sortAscending: true,
   openMenuId: null
@@ -31,22 +39,10 @@ const els = {
   banner: document.getElementById("duplicateBanner"),
   toast: document.getElementById("toast"),
   themeToggle: document.getElementById("themeToggle"),
+  authButton: document.getElementById("authButton"),
+  authLabel: document.querySelector(".auth-label"),
   sortLabel: document.querySelector(".sort-label")
 };
-
-function loadPatients() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const data = raw ? JSON.parse(raw) : [];
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
-function persist() {
-  if (!IS_APPS_SCRIPT) localStorage.setItem(STORAGE_KEY, JSON.stringify(state.patients));
-}
 
 function applyTheme(theme) {
   const selected = theme === "light" ? "light" : "dark";
@@ -70,65 +66,188 @@ function toggleTheme() {
   try { localStorage.setItem(THEME_KEY, next); } catch {}
 }
 
-function loadRemotePatients() {
-  google.script.run
-    .withSuccessHandler(patients => {
-      state.patients = Array.isArray(patients) ? patients : [];
-      render();
-    })
-    .withFailureHandler(error => {
-      console.error(error);
-      showToast("Could not load patient records");
-    })
-    .getPatients();
+function updateAuthButton(connected = false, busy = false) {
+  if (!els.authButton) return;
+  els.authButton.disabled = busy || !googleAuthReady;
+  els.authButton.classList.toggle("connected", connected);
+  els.authButton.classList.toggle("busy", busy);
+  if (els.authLabel) {
+    els.authLabel.textContent = busy
+      ? "Connecting…"
+      : connected
+        ? "Google connected"
+        : googleAuthReady
+          ? "Connect Google"
+          : "Loading Google…";
+  }
+  els.authButton.setAttribute("aria-label", connected ? "Refresh Google connection" : "Connect Google");
+  els.authButton.setAttribute("title", connected ? "Refresh Google connection" : "Connect Google");
 }
 
-function saveRemotePatient(patient, allowDuplicate = false) {
-  google.script.run
-    .withSuccessHandler(result => {
-      if (result?.duplicate && !allowDuplicate) {
-        const names = (result.duplicates || []).map(p => p.name).join(", ");
-        const proceed = window.confirm(
-          `Possible duplicate found: ${names || "an existing patient"}.
+function initGoogleTokenClient() {
+  if (!window.google?.accounts?.oauth2) return false;
+  googleTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_SCOPE,
+    callback: () => {}
+  });
+  googleAuthReady = true;
+  updateAuthButton(Boolean(accessToken), false);
+  return true;
+}
+
+function loadGoogleIdentityServices() {
+  return new Promise((resolve, reject) => {
+    if (initGoogleTokenClient()) {
+      resolve();
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => initGoogleTokenClient()
+      ? resolve()
+      : reject(new Error("Google Identity Services could not initialize."));
+    script.onerror = () => reject(new Error("Could not load Google Identity Services."));
+    document.head.appendChild(script);
+  });
+}
+
+function requestGoogleAccess({forceConsent = false} = {}) {
+  return new Promise((resolve, reject) => {
+    if (!googleTokenClient) {
+      reject(new Error("Google authorization is still loading. Please try again."));
+      return;
+    }
+
+    googleTokenClient.callback = response => {
+      googleAuthBusy = false;
+      if (!response || response.error || !response.access_token) {
+        updateAuthButton(Boolean(accessToken), false);
+        reject(new Error(response?.error_description || response?.error || "Google authorization was not completed."));
+        return;
+      }
+      accessToken = response.access_token;
+      accessTokenExpiresAt = Date.now() + (Number(response.expires_in || 3600) * 1000);
+      updateAuthButton(true, false);
+      resolve(accessToken);
+    };
+
+    googleAuthBusy = true;
+    updateAuthButton(false, true);
+    try {
+      googleTokenClient.requestAccessToken({
+        prompt: forceConsent || !accessToken ? "consent" : ""
+      });
+    } catch (error) {
+      googleAuthBusy = false;
+      updateAuthButton(Boolean(accessToken), false);
+      reject(error);
+    }
+  });
+}
+
+async function ensureGoogleAccess() {
+  const stillValid = accessToken && Date.now() < accessTokenExpiresAt - 5 * 60 * 1000;
+  if (stillValid) return accessToken;
+  return requestGoogleAccess({forceConsent: !accessToken});
+}
+
+function handleRemoteError(error) {
+  console.error(error);
+  if (error?.status === 401 || error?.status === 403) {
+    accessToken = null;
+    accessTokenExpiresAt = 0;
+    updateAuthButton(false, false);
+  }
+}
+
+async function callAppsScript(functionName, parameters = []) {
+  const token = await ensureGoogleAccess();
+  const response = await fetch(APPS_SCRIPT_RUN_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({function: functionName, parameters})
+  });
+
+  let payload;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(`Google API returned HTTP ${response.status}.`);
+  }
+
+  if (!response.ok) {
+    const error = new Error(payload?.error?.message || `Google API returned HTTP ${response.status}.`);
+    error.status = response.status;
+    throw error;
+  }
+
+  if (payload?.error) {
+    const details = payload.error.details?.[0];
+    const error = new Error(details?.errorMessage || payload.error.message || "Apps Script execution failed.");
+    error.status = payload.error.code;
+    throw error;
+  }
+
+  return payload?.response?.result;
+}
+
+async function loadRemotePatients() {
+  try {
+    const patients = await callAppsScript("getPatients");
+    state.patients = Array.isArray(patients) ? patients : [];
+    render();
+  } catch (error) {
+    handleRemoteError(error);
+    showToast(error?.message || "Could not load patient records");
+  }
+}
+
+async function saveRemotePatient(patient, allowDuplicate = false) {
+  try {
+    const result = await callAppsScript("savePatientRecord", [patient, allowDuplicate]);
+    if (result?.duplicate && !allowDuplicate) {
+      const names = (result.duplicates || []).map(p => p.name).join(", ");
+      const proceed = window.confirm(
+        `Possible duplicate found: ${names || "an existing patient"}.
 
 Do you want to save this record anyway?`
-        );
-        if (!proceed) return;
-        saveRemotePatient(patient, true);
-        return;
-      }
-
-      if (result?.ok === false) {
-        showToast("Could not save patient");
-        return;
-      }
-
-      state.patients = Array.isArray(result?.patients) ? result.patients : state.patients;
-      closeDialog();
-      render();
-      showToast("Patient saved");
-    })
-    .withFailureHandler(error => {
-      console.error(error);
-      showToast(error?.message || "Could not save patient");
-    })
-    .savePatientRecord(patient, allowDuplicate);
+      );
+      if (!proceed) return;
+      await saveRemotePatient(patient, true);
+      return;
+    }
+    if (result?.ok === false) {
+      showToast("Could not save patient");
+      return;
+    }
+    state.patients = Array.isArray(result?.patients) ? result.patients : state.patients;
+    closeDialog();
+    render();
+    showToast("Patient saved");
+  } catch (error) {
+    handleRemoteError(error);
+    showToast(error?.message || "Could not save patient");
+  }
 }
 
-function deleteRemotePatient(id) {
-  google.script.run
-    .withSuccessHandler(result => {
-      state.patients = Array.isArray(result?.patients)
-        ? result.patients
-        : state.patients.filter(p => p.id !== id);
-      render();
-      showToast("Patient deleted");
-    })
-    .withFailureHandler(error => {
-      console.error(error);
-      showToast(error?.message || "Could not delete patient");
-    })
-    .deletePatientRecord(id);
+async function deleteRemotePatient(id) {
+  try {
+    const result = await callAppsScript("deletePatientRecord", [id]);
+    state.patients = Array.isArray(result?.patients)
+      ? result.patients
+      : state.patients.filter(p => p.id !== id);
+    render();
+    showToast("Patient deleted");
+  } catch (error) {
+    handleRemoteError(error);
+    showToast(error?.message || "Could not delete patient");
+  }
 }
 
 function normalizeName(value) {
@@ -358,22 +477,7 @@ Do you want to save this record anyway?`
     if (!proceed) return;
   }
 
-  if (IS_APPS_SCRIPT) {
-    saveRemotePatient(patient);
-    return;
-  }
-
-  if (state.editingId) {
-    state.patients = state.patients.map(p => p.id === state.editingId ? patient : p);
-    showToast("Patient updated");
-  } else {
-    state.patients.push(patient);
-    showToast("Patient saved");
-  }
-
-  persist();
-  closeDialog();
-  render();
+  saveRemotePatient(patient);
 }
 
 function deletePatient(id) {
@@ -384,15 +488,7 @@ function deletePatient(id) {
 
   state.openMenuId = null;
 
-  if (IS_APPS_SCRIPT) {
-    deleteRemotePatient(id);
-    return;
-  }
-
-  state.patients = state.patients.filter(p => p.id !== id);
-  persist();
-  render();
-  showToast("Patient deleted");
+  deleteRemotePatient(id);
 }
 
 function openWhatsApp(id) {
@@ -409,6 +505,18 @@ function showToast(message) {
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 2200);
 }
+
+els.authButton?.addEventListener("click", async () => {
+  if (!googleAuthReady || googleAuthBusy) return;
+  try {
+    await requestGoogleAccess({forceConsent: !accessToken});
+    await loadRemotePatients();
+    showToast("Google connected");
+  } catch (error) {
+    handleRemoteError(error);
+    showToast(error?.message || "Google authorization failed");
+  }
+});
 
 document.getElementById("addTopBtn").addEventListener("click", openAdd);
 document.getElementById("mobileAddBtn").addEventListener("click", openAdd);
@@ -472,5 +580,12 @@ els.dialog.addEventListener("click", event => {
 
 initTheme();
 render();
+updateAuthButton(false, true);
 
-if (IS_APPS_SCRIPT) loadRemotePatients();
+loadGoogleIdentityServices()
+  .then(() => updateAuthButton(Boolean(accessToken), false))
+  .catch(error => {
+    console.error(error);
+    updateAuthButton(false, false);
+    showToast("Google connection is unavailable");
+  });
