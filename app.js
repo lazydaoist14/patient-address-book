@@ -138,7 +138,7 @@ function requestGoogleAccess({forceConsent = false, silent = false} = {}) {
     updateAuthButton(false, true);
     try {
       googleTokenClient.requestAccessToken({
-        prompt: silent ? "" : (forceConsent ? "consent" : "")
+        prompt: silent ? "none" : (forceConsent ? "consent" : "")
       });
     } catch (error) {
       googleAuthBusy = false;
@@ -154,14 +154,15 @@ async function ensureGoogleAccess() {
   return requestGoogleAccess({forceConsent: false});
 }
 
-async function tryAutoConnect() {
+async async function tryAutoConnect() {
   if (!googleAuthReady || googleAuthBusy) return;
   try {
+    await new Promise(resolve => setTimeout(resolve, 250));
     await requestGoogleAccess({silent: true});
     await loadRemotePatients();
   } catch (error) {
-    // A first-time visitor may need to tap Connect Google.
-    // Keep the app usable without treating a silent authorization miss as a fatal error.
+    // Silent authorization can fail when Google requires interaction.
+    // In that case the user can explicitly reconnect without exposing or storing tokens.
     console.debug("Automatic Google connection was not available:", error);
     updateAuthButton(false, false);
   }
