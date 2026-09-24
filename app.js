@@ -151,7 +151,20 @@ function requestGoogleAccess({forceConsent = false} = {}) {
 async function ensureGoogleAccess() {
   const stillValid = accessToken && Date.now() < accessTokenExpiresAt - 5 * 60 * 1000;
   if (stillValid) return accessToken;
-  return requestGoogleAccess({forceConsent: !accessToken});
+  return requestGoogleAccess({forceConsent: false});
+}
+
+async function tryAutoConnect() {
+  if (!googleAuthReady || googleAuthBusy) return;
+  try {
+    await requestGoogleAccess({forceConsent: false});
+    await loadRemotePatients();
+  } catch (error) {
+    // A first-time visitor may need to tap Connect Google.
+    // Keep the app usable without treating a silent authorization miss as a fatal error.
+    console.debug("Automatic Google connection was not available:", error);
+    updateAuthButton(false, false);
+  }
 }
 
 function handleRemoteError(error) {
@@ -585,7 +598,7 @@ render();
 updateAuthButton(false, true);
 
 loadGoogleIdentityServices()
-  .then(() => updateAuthButton(Boolean(accessToken), false))
+  .then(() => tryAutoConnect())
   .catch(error => {
     console.error(error);
     updateAuthButton(false, false);
