@@ -1,30 +1,29 @@
 # Patient Address Book
 
-A mobile-friendly patient contact/address book with:
+A mobile-friendly patient contact/address book.
+
+## Features
 
 - Search by patient name or phone number
 - Duplicate detection by normalized name and phone number
 - Add, edit and delete patient records
 - Required name and contact number
 - Optional address
+- International phone number support
 - WhatsApp shortcut using the international `wa.me` format
 - Responsive glassmorphism-inspired UI
-- Browser-local storage for the current prototype
+- Fast client-side searching after the initial data load
 
-## Important data note
+## Cloud version
 
-The current version stores patient records in the browser's **localStorage**. That means the data is tied to the specific browser/device and is not synchronized between devices.
+The recommended version uses a **private Google Sheet + Google Apps Script web app**. The patient list is loaded once into the browser and searching happens locally, so search speed is not tied to Google Sheets response time.
 
-For actual clinical use or multi-device access, the next version should add authenticated storage using a proper database (for example, Supabase) and appropriate privacy/security controls.
+Setup instructions are in [GOOGLE-SHEETS-SETUP.md](GOOGLE-SHEETS-SETUP.md).
 
-## WhatsApp numbers
+The Apps Script source and the version of the UI suitable for Apps Script are in `google-apps-script/`.
 
-The app supports international numbers. Select the appropriate country code, or paste a complete number beginning with `+`. The WhatsApp button opens:
+## Privacy
 
-`https://wa.me/<international-digits>`
+Keep the Google Sheet private and deploy the Apps Script web app only to your own Google account. This repository is private.
 
-The number should include the country calling code and should not contain spaces, brackets or other formatting after normalization.
-
-## Deployment
-
-The project is a static web app and can be deployed with GitHub Pages.
+For a larger multi-user clinical system, use dedicated authentication, audit logging, backups and a healthcare-oriented database/security design.
