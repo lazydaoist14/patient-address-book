@@ -1,7 +1,8 @@
 const STORAGE_KEY = "patient-address-book:v1";
 
+const IS_APPS_SCRIPT = typeof google !== "undefined" && google.script && google.script.run;
 const state = {
-  patients: loadPatients(),
+  patients: IS_APPS_SCRIPT ? [] : loadPatients(),
   editingId: null,
   sortAscending: true
 };
@@ -39,7 +40,49 @@ function loadPatients() {
 }
 
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.patients));
+  if (!IS_APPS_SCRIPT) localStorage.setItem(STORAGE_KEY, JSON.stringify(state.patients));
+}
+
+function loadRemotePatients() {
+  google.script.run
+    .withSuccessHandler(patients => {
+      state.patients = Array.isArray(patients) ? patients : [];
+      render();
+    })
+    .withFailureHandler(error => {
+      console.error(error);
+      showToast("Could not load patient records");
+    })
+    .getPatients();
+}
+
+function saveRemotePatient(patient) {
+  google.script.run
+    .withSuccessHandler(result => {
+      state.patients = Array.isArray(result?.patients) ? result.patients : state.patients;
+      closeDialog();
+      render();
+      showToast("Patient saved");
+    })
+    .withFailureHandler(error => {
+      console.error(error);
+      showToast(error?.message || "Could not save patient");
+    })
+    .savePatientRecord(patient);
+}
+
+function deleteRemotePatient(id) {
+  google.script.run
+    .withSuccessHandler(result => {
+      state.patients = Array.isArray(result?.patients) ? result.patients : state.patients.filter(p => p.id !== id);
+      render();
+      showToast("Patient deleted");
+    })
+    .withFailureHandler(error => {
+      console.error(error);
+      showToast(error?.message || "Could not delete patient");
+    })
+    .deletePatientRecord(id);
 }
 
 function normalizeName(value) {
@@ -239,6 +282,11 @@ function savePatient(event) {
     if (!proceed) return;
   }
 
+  if (IS_APPS_SCRIPT) {
+    saveRemotePatient(patient);
+    return;
+  }
+
   if (state.editingId) {
     state.patients = state.patients.map(p => p.id === state.editingId ? patient : p);
     showToast("Patient updated");
@@ -256,6 +304,10 @@ function deletePatient(id) {
   const patient = state.patients.find(p => p.id === id);
   if (!patient) return;
   if (!window.confirm(`Delete “${patient.name}” from this device?`)) return;
+  if (IS_APPS_SCRIPT) {
+    deleteRemotePatient(id);
+    return;
+  }
   state.patients = state.patients.filter(p => p.id !== id);
   persist();
   render();
@@ -317,3 +369,5 @@ els.dialog.addEventListener("click", event => {
 });
 
 render();
+
+if (IS_APPS_SCRIPT) loadRemotePatients();
