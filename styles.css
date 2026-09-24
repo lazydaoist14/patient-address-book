@@ -1439,3 +1439,285 @@ html[data-theme="light"] .liquid-toggle::before {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* =========================================================
+   LIQUID GLASS — REFRACTIVE / DARK GLASS PASS
+   Inspired by the user's reference: near-transparent panes,
+   sharp luminous rims, internal reflections and depth.
+   ========================================================= */
+:root {
+  --lg-fill: rgba(255,255,255,.045);
+  --lg-fill-2: rgba(255,255,255,.075);
+  --lg-rim: rgba(255,255,255,.34);
+  --lg-rim-bright: rgba(255,255,255,.72);
+  --lg-shadow-deep: rgba(0,0,0,.42);
+}
+html[data-theme="light"] {
+  --lg-fill: rgba(255,255,255,.16);
+  --lg-fill-2: rgba(255,255,255,.25);
+  --lg-rim: rgba(70,70,80,.22);
+  --lg-rim-bright: rgba(255,255,255,.92);
+  --lg-shadow-deep: rgba(50,50,65,.22);
+}
+
+/* The reference is mostly transparent glass over a textured field,
+   not opaque white cards. */
+body {
+  background:
+    radial-gradient(480px 420px at 12% 12%, rgba(10,132,255,.18), transparent 68%),
+    radial-gradient(520px 460px at 88% 76%, rgba(191,90,242,.16), transparent 70%),
+    linear-gradient(135deg, #090a0d 0%, #15171c 48%, #08090c 100%);
+  background-attachment: fixed;
+}
+html[data-theme="light"] body {
+  background:
+    radial-gradient(480px 420px at 12% 12%, rgba(10,132,255,.15), transparent 68%),
+    radial-gradient(520px 460px at 88% 76%, rgba(191,90,242,.11), transparent 70%),
+    linear-gradient(135deg, #eef1f6 0%, #dfe3ea 48%, #f4f5f8 100%);
+}
+
+/* Replace the "frosted white panel" look with a thin-shell glass object. */
+.glass {
+  background: var(--lg-fill);
+  border: 1px solid var(--lg-rim);
+  box-shadow:
+    0 18px 48px var(--lg-shadow-deep),
+    inset 1px 1px 0 var(--lg-rim-bright),
+    inset -1px -1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(12px) saturate(145%);
+  -webkit-backdrop-filter: blur(12px) saturate(145%);
+}
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg,
+      rgba(255,255,255,.13) 0%,
+      rgba(255,255,255,.025) 17%,
+      transparent 35%,
+      transparent 72%,
+      rgba(255,255,255,.045) 88%,
+      rgba(255,255,255,.11) 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,.22),
+    inset -1px -1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  filter: url("#glass-distortion");
+  opacity: .92;
+}
+.glass::after {
+  border: 0 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.055),
+    inset 0 1px 0 rgba(255,255,255,.20),
+    inset 1px 0 0 rgba(255,255,255,.10);
+}
+
+/* Content must remain above the refractive layer. */
+.topbar > *,
+.stats > *,
+.toolbar > *,
+.empty > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Strong luminous rim like the reference image. */
+.topbar,
+.toolbar,
+.stats,
+.patient-card {
+  box-shadow:
+    0 18px 48px var(--lg-shadow-deep),
+    inset 1px 1px 0 var(--lg-rim-bright),
+    inset -1px -1px 0 rgba(255,255,255,.07);
+}
+.topbar:hover,
+.stats:hover {
+  border-color: rgba(255,255,255,.42);
+}
+
+/* Patient cards: thin glass shells, not solid tiles. */
+.patient-card.glass {
+  background: rgba(255,255,255,.035);
+  border-color: rgba(255,255,255,.25);
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  transition: transform .35s cubic-bezier(.175,.885,.32,1.5), border-color .25s ease, box-shadow .25s ease;
+}
+.patient-card.glass::before {
+  z-index: 0;
+  background:
+    linear-gradient(125deg, rgba(255,255,255,.10), transparent 28%, transparent 68%, rgba(255,255,255,.055)),
+    rgba(255,255,255,.015);
+  filter: url("#glass-distortion");
+}
+.patient-card.glass:hover {
+  transform: translateY(-2px) scale(1.003);
+  border-color: rgba(255,255,255,.40);
+  box-shadow:
+    0 22px 55px rgba(0,0,0,.48),
+    inset 1px 1px 0 rgba(255,255,255,.82),
+    inset -1px -1px 0 rgba(255,255,255,.08);
+}
+html[data-theme="light"] .patient-card.glass {
+  background: rgba(255,255,255,.13);
+  border-color: rgba(70,70,85,.20);
+}
+html[data-theme="light"] .patient-card.glass:hover {
+  border-color: rgba(70,70,85,.30);
+  box-shadow:
+    0 22px 55px rgba(50,50,65,.20),
+    inset 1px 1px 0 rgba(255,255,255,.98),
+    inset -1px -1px 0 rgba(255,255,255,.30);
+}
+
+/* Controls become small pieces of glass sitting above the surface. */
+.action,
+.filter-button,
+.glass-control,
+.search-wrap input {
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.25);
+  box-shadow:
+    0 8px 22px rgba(0,0,0,.30),
+    inset 1px 1px 0 rgba(255,255,255,.52),
+    inset -1px -1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(10px) saturate(145%);
+  -webkit-backdrop-filter: blur(10px) saturate(145%);
+}
+.action::before,
+.glass-control::before {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.78), transparent);
+  height: 1px;
+  top: 0;
+  opacity: .85;
+}
+.action:hover,
+.filter-button:hover,
+.glass-control:hover {
+  background: rgba(255,255,255,.095);
+  border-color: rgba(255,255,255,.46);
+  box-shadow:
+    0 14px 32px rgba(0,0,0,.38),
+    inset 1px 1px 0 rgba(255,255,255,.72);
+}
+html[data-theme="light"] .action,
+html[data-theme="light"] .filter-button,
+html[data-theme="light"] .glass-control,
+html[data-theme="light"] .search-wrap input {
+  background: rgba(255,255,255,.27);
+  border-color: rgba(70,70,85,.17);
+  box-shadow:
+    0 8px 22px rgba(50,50,65,.14),
+    inset 1px 1px 0 rgba(255,255,255,.96),
+    inset -1px -1px 0 rgba(255,255,255,.24);
+}
+html[data-theme="light"] .action:hover,
+html[data-theme="light"] .filter-button:hover,
+html[data-theme="light"] .glass-control:hover {
+  background: rgba(255,255,255,.40);
+  border-color: rgba(70,70,85,.26);
+}
+
+/* Make the segmented theme switch closer to the reference: dark shell,
+   thin rim, sliding inner capsule. */
+.liquid-toggle {
+  width: 108px;
+  height: 46px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(20,21,24,.64);
+  border: 1px solid rgba(255,255,255,.26);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,.42),
+    inset 1px 1px 0 rgba(255,255,255,.20),
+    inset -1px -1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+.liquid-toggle::before {
+  top: 5px;
+  left: 5px;
+  width: 47px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.13);
+  border: 1px solid rgba(255,255,255,.30);
+  box-shadow:
+    0 5px 16px rgba(0,0,0,.34),
+    inset 1px 1px 0 rgba(255,255,255,.34);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  filter: url("#glass-distortion");
+}
+html[data-theme="dark"] .liquid-toggle::before { transform: translateX(51px); }
+html[data-theme="light"] .liquid-toggle::before { transform: translateX(0); }
+.liquid-toggle .theme-option {
+  width: 47px;
+  height: 34px;
+  color: rgba(255,255,255,.48);
+}
+.liquid-toggle .theme-option svg {
+  width: 21px;
+  height: 21px;
+}
+html[data-theme="dark"] .liquid-toggle .theme-dark,
+html[data-theme="light"] .liquid-toggle .theme-light {
+  color: rgba(255,255,255,.96);
+  filter: drop-shadow(0 0 5px rgba(255,255,255,.20));
+}
+html[data-theme="light"] .liquid-toggle {
+  background: rgba(245,246,250,.58);
+  border-color: rgba(70,70,85,.20);
+  box-shadow:
+    0 12px 30px rgba(50,50,65,.18),
+    inset 1px 1px 0 rgba(255,255,255,.95),
+    inset -1px -1px 0 rgba(255,255,255,.25);
+}
+html[data-theme="light"] .liquid-toggle::before {
+  background: rgba(255,255,255,.50);
+  border-color: rgba(70,70,85,.14);
+  box-shadow: 0 5px 16px rgba(50,50,65,.15), inset 1px 1px 0 rgba(255,255,255,.98);
+}
+html[data-theme="light"] .liquid-toggle .theme-light {
+  color: #22242a;
+}
+html[data-theme="light"] .liquid-toggle .theme-dark {
+  color: rgba(40,40,48,.45);
+}
+@media (max-width:700px) {
+  .liquid-toggle { width: 88px; height: 42px; padding: 4px; }
+  .liquid-toggle::before { top: 4px; left: 4px; width: 38px; height: 32px; }
+  html[data-theme="dark"] .liquid-toggle::before { transform: translateX(42px); }
+  .liquid-toggle .theme-option { width: 38px; height: 32px; }
+}
+
+/* Menus should feel like floating glass chips. */
+.more-menu {
+  background: rgba(20,21,24,.72);
+  border-color: rgba(255,255,255,.28);
+  box-shadow:
+    0 24px 65px rgba(0,0,0,.50),
+    inset 1px 1px 0 rgba(255,255,255,.40);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+}
+html[data-theme="light"] .more-menu {
+  background: rgba(245,246,250,.68);
+  border-color: rgba(70,70,85,.18);
+}
+
+/* Red warning remains vivid, but the shell itself is glass. */
+.duplicate-banner,
+.form-warning {
+  background: rgba(255,59,48,.10);
+  border-color: rgba(255,59,48,.38);
+  box-shadow: 0 8px 25px rgba(255,59,48,.12), inset 1px 1px 0 rgba(255,255,255,.24);
+}
