@@ -2,7 +2,7 @@ const THEME_KEY = "patient-address-book:theme";
 
 const GOOGLE_CLIENT_ID = "469488426438-9j9uouudgmvropjtdkg15uqrl9kjtjc4.apps.googleusercontent.com";
 const GOOGLE_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
-const APPS_SCRIPT_DEPLOYMENT_ID = "AKfycbx9aJrbBXjgZua6fpJjxLKFGp51XwuY7lV8fQ8OITGzKCDs9zXicv-CxOb0wVkYrwS3dg";
+const APPS_SCRIPT_DEPLOYMENT_ID = "AKfycbx9aJrbBXjgZua6fpJjxLKFGp51XwuY7lV8fQ8OITGzKCDs9zXicv-cXob0wVkYrwS3dg";
 const APPS_SCRIPT_RUN_URL = `https://script.googleapis.com/v1/scripts/${APPS_SCRIPT_DEPLOYMENT_ID}:run`;
 
 let googleTokenClient = null;
