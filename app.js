@@ -518,7 +518,7 @@ function openWhatsApp(id) {
   const isAndroid = /Android/i.test(navigator.userAgent || "");
   if (isAndroid) {
     const phone = digitsOnly(patient.phone);
-    const fallback = encodeURIComponent(url);
+    const fallback = encodeURIComponent("https://play.google.com/store/apps/details?id=com.whatsapp.w4b");
     const intentUrl =
       `intent://send?phone=${phone}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;S.browser_fallback_url=${fallback};end`;
     window.location.href = intentUrl;
