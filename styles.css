@@ -137,3 +137,4 @@ button { cursor: pointer; }
   .phone-row { grid-template-columns: 108px 1fr; }
   .hero h2 { font-size: 31px; }
 }
+\n.action.whatsapp { display: inline-grid; place-items: center; }\n.action.whatsapp svg { width: 19px; height: 19px; fill: currentColor; }\n
