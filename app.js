@@ -280,6 +280,12 @@ function normalizePhone(raw, countryCode = "+91") {
   return digitsOnly(countryCode) + digitsOnly(text);
 }
 
+function callUrl(patient) {
+  const digits = digitsOnly(patient.phone);
+  if (!digits || digits.length < 8) return null;
+  return "tel:+" + digits;
+}
+
 function displayPhone(patient) {
   return patient.displayPhone || patient.phone;
 }
@@ -349,6 +355,7 @@ function render() {
 
 function patientCard(patient) {
   const wa = whatsappUrl(patient);
+  const call = callUrl(patient);
   const menuOpen = state.openMenuId === patient.id;
 
   return `
@@ -364,6 +371,9 @@ function patientCard(patient) {
       </div>
 
       <div class="card-actions">
+        ${call ? `<button class="action call" data-action="call" data-id="${escapeHtml(patient.id)}" title="Call ${escapeHtml(patient.name)}" aria-label="Call ${escapeHtml(patient.name)}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.2 9.1 2.7c.7-.1 1.4.3 1.6 1l1.1 3.2c.2.6 0 1.2-.5 1.6-1L10 10a13.7 13.7 0 0 0 4 4l1.5-1.8c.4-.5 1-.7 1.6-.5l3.2 1.1c.7.2 1.1.9 1 1.6l-.5 2.5c-.2 1-1.1 1.7-2.1 1.7C10.6 18.6 5.4 13.4 5.4 6.3c0-1 .7-1.9 1.7-2.1Z"/></svg>
+        </button>` : ""}
         ${wa ? `<button class="action whatsapp" data-action="whatsapp" data-id="${escapeHtml(patient.id)}" title="Open WhatsApp" aria-label="Open WhatsApp">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.9 11.9 0 0 0 12.03 0C5.45 0 .1 5.35.1 11.93c0 2.1.55 4.16 1.6 5.96L.02 24l6.25-1.64a11.92 11.92 0 0 0 5.76 1.47h.01c6.58 0 11.93-5.35 11.93-11.93 0-3.19-1.24-6.18-3.47-8.4ZM12.04 21.8h-.01a9.9 9.9 0 0 1-5.05-1.38l-.36-.21-3.71.98.99-3.62-.23-.37a9.87 9.87 0 0 1-1.52-5.27C2.15 6.47 6.58 2.04 12.03 2.04c2.64 0 5.12 1.03 6.99 2.9a9.84 9.84 0 0 1 2.9 7c0 5.45-4.43 9.87-9.88 9.87Zm5.42-7.4c-.3-.15-1.77-.87-2.05-.97-.28-.1-.48-.15-.68.15-.2.3-.78.97-.96 1.17-.18.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.68-1.64-.93-2.25-.24-.59-.49-.51-.68-.52h-.58c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.27.5 1.71.64.72.23 1.37.2 1.89.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.18-1.42-.08-.12-.28-.2-.58-.35Z"/></svg>
         </button>` : ""}
@@ -529,6 +539,13 @@ function openWhatsApp(id) {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
+function openCall(id) {
+  const patient = state.patients.find(p => p.id === id);
+  const url = patient && callUrl(patient);
+  if (!url) return;
+  window.location.href = url;
+}
+
 function showToast(message) {
   els.toast.textContent = message;
   els.toast.classList.add("show");
@@ -591,6 +608,7 @@ els.list.addEventListener("click", event => {
   if (action === "edit") openEdit(id);
   if (action === "delete") deletePatient(id);
   if (action === "whatsapp") openWhatsApp(id);
+  if (action === "call") openCall(id);
   if (action === "more") {
     state.openMenuId = state.openMenuId === id ? null : id;
     render();
