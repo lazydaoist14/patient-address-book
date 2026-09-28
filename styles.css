@@ -1762,3 +1762,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SamsungOne","Segoe UI",Roboto
 .mobile-fab{width:58px;height:58px;border-radius:19px;border:0;background:var(--accent);color:var(--accent-text);box-shadow:0 8px 24px rgba(0,0,0,.22)}
 @media(max-width:700px){.app-shell{width:min(100% - 24px,620px);padding-top:12px}.topbar{border-radius:22px}.hero{padding:34px 4px 20px}.patient-card{padding:15px;border-radius:21px}.card-actions{justify-content:flex-start;padding-top:4px}.action{min-width:44px;height:44px}}
 @media(max-width:430px){.app-shell{width:calc(100% - 20px)}.auth-label{display:none}.auth-button{width:44px;padding:0!important;justify-content:center}.hero h2{font-size:31px}}
+
+/* MOBILE POLISH — One UI spacing, clean geometry, reliable icon rendering */
+html,body{overflow-x:hidden}
+.app-shell{max-width:1100px}
+.patient-card,.toolbar,.topbar,.stats,.empty,.dialog-card,.action,.filter-button,.search-wrap input,.button,.auth-button,.theme-toggle,.mobile-fab{overflow:hidden;clip-path:none}
+.action.call svg{display:block!important;width:20px!important;height:20px!important;fill:currentColor!important;stroke:none!important;opacity:1!important;visibility:visible!important}
+.action.call{display:grid!important;place-items:center!important;color:#147ef5!important}
+@media(max-width:700px){
+  .app-shell{width:calc(100% - 32px);max-width:none;margin:0 auto;padding-top:12px}
+  .topbar{width:100%;padding:9px 10px 9px 12px}
+  .topbar-actions{gap:6px;flex-shrink:0}
+  .hero{padding:32px 2px 20px}
+  .stats{width:100%;min-width:0}
+  .toolbar{width:100%;box-sizing:border-box}
+  .patient-list{width:100%;gap:10px}
+  .patient-card{width:100%;min-width:0;grid-template-columns:48px minmax(0,1fr);gap:12px;padding:14px;border-radius:20px}
+  .patient-main{min-width:0;overflow:hidden}
+  .patient-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .patient-meta{min-width:0}
+  .patient-meta span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .address{max-width:100%;overflow-wrap:anywhere}
+  .card-actions{grid-column:1/-1;width:100%;display:flex;align-items:center;justify-content:flex-start;gap:8px;padding-top:2px}
+  .card-actions .action{width:46px;min-width:46px;height:46px;flex:0 0 46px;border-radius:15px}
+  .more-wrap{display:flex}
+  .more-menu{right:0}
+  .duplicate-banner{width:100%;box-sizing:border-box}
+  .dialog{max-width:calc(100% - 24px)}
+}
+@media(max-width:430px){
+  .app-shell{width:calc(100% - 24px)}
+  .topbar{border-radius:20px}
+  .brand{min-width:0}
+  .brand h1{max-width:155px;overflow:hidden;text-overflow:ellipsis}
+  .auth-button{width:44px;min-width:44px}
+  .theme-toggle{width:46px!important;min-width:46px!important}
+  .hero h2{font-size:30px;line-height:1.06}
+  .search-wrap input{height:46px}
+  .filter-button{min-width:72px}
+}
